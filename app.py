@@ -3,7 +3,10 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from joblib import dump, load
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
+import os
+
+
 app = Flask(__name__)
 
 
@@ -17,10 +20,10 @@ def prediccionesDelModelo(predictionInput):
 
 
 
-@app.route('/getmsg/', methods=['GET'])
+@app.route('/predecir/', methods=['GET'])
 def respond():
     # Retrieve the name from the url parameter /getmsg/?name=
-    input = request.args.get("name", None)
+    input = request.args.get("input", None)
 
     input = input.split(',')
     y = np.array(input)
@@ -29,6 +32,7 @@ def respond():
     a =prediccionesDelModelo(y)    
     a = a.tolist()[0]
     a = [int(eval(i)) for i in a]
+    b = ",".join([str(i) for i in a])
     response = {}
 
     # Check if the user sent a name at all
@@ -38,15 +42,20 @@ def respond():
     elif str(input).isdigit():        
         response["ERROR"] = "The name can't be numeric. Please send a string."   
     else:
-        response["prediction"] = f"{a}"
+        response["prediction"] = f"{b}"
         return jsonify({
-            "prediction": a
+            "prediction": b
         })        
 
     # Return the response in json format
     return jsonify(response)
 
 
+@app.route("/")
+@app.route("/home")
+def home():
+    return render_template("index.html")
+
 if __name__ == '__main__':
-    # Threaded option to enable multiple instances for multiple user access support
-    app.run()
+    port = int(os.environ.get('PORT',5000))    
+    app.run(host='0.0.0.0',port=port, debug=True)    
